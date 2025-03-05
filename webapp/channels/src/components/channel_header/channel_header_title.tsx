@@ -11,6 +11,7 @@ import type {UserProfile} from '@mattermost/types/users';
 
 import {Client4} from 'mattermost-redux/client';
 import {getCurrentChannel} from 'mattermost-redux/selectors/entities/channels';
+import {getCurrentUser} from 'mattermost-redux/selectors/entities/users';
 
 import {getIsRhsOpen} from 'selectors/rhs';
 
@@ -41,6 +42,7 @@ const ChannelHeaderTitle = ({
     const [showTooltip, setShowTooltip] = useState(false);
     const intl = useIntl();
     const channel = useSelector(getCurrentChannel);
+    const currentUser = useSelector(getCurrentUser);
 
     const headerItemRef = useRef<HTMLElement | null>(null);
     const isRHSOpen = useSelector(getIsRhsOpen);
@@ -116,6 +118,20 @@ const ChannelHeaderTitle = ({
         );
     }
 
+    const personalChannelHeaderAriaLabel = intl.formatMessage({
+        id: 'channel_header.directchannel',
+        defaultMessage: '{displayName} (you) Channel Menu',
+    }, {
+        displayName: channel.display_name,
+    });
+
+    const othersChannelHeaderAriaLabel = intl.formatMessage({
+        id: 'channel_header.otherchannel',
+        defaultMessage: '{displayName} Channel Menu',
+    }, {
+        displayName: channel.display_name,
+    });
+
     return (
         <div className='channel-header__top'>
             <ChannelHeaderTitleFavorite/>
@@ -132,7 +148,11 @@ const ChannelHeaderTitle = ({
                 >
                     <button
                         className={classNames('channel-header__trigger style--none', {active: titleMenuOpen})}
-                        aria-label={intl.formatMessage({id: 'channel_header.menuAriaLabel', defaultMessage: 'Channel Menu'}).toLowerCase()}
+                        aria-label={
+                            (isDirect && currentUser.id === dmUser?.id) ? personalChannelHeaderAriaLabel.toLowerCase() : othersChannelHeaderAriaLabel.toLowerCase()
+                        }
+                        aria-expanded={titleMenuOpen}
+                        aria-controls='channelHeaderDropdownMenu'
                     >
                         {showTooltip ? (
                             <WithTooltip
@@ -166,10 +186,14 @@ const ChannelHeaderTitle = ({
                         <span
                             id='channelHeaderDropdownIcon'
                             className='icon icon-chevron-down header-dropdown-chevron-icon'
+                            aria-hidden='true'
                         />
                     </button>
                 </div>
-                <ChannelHeaderDropdown/>
+                <ChannelHeaderDropdown
+                    ariaLabel={
+                        (isDirect && currentUser.id === dmUser?.id) ? personalChannelHeaderAriaLabel.toLowerCase() : othersChannelHeaderAriaLabel.toLowerCase()}
+                />
             </MenuWrapper>
         </div>
     );
